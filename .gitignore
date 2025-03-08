@@ -1,0 +1,36 @@
+# AutoHotkey compiled files
+*.exe
+*.dll
+*.ahk.bak
+
+# Windows system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Windows shortcuts
+*.lnk
+
+# Compiled AutoHotkey script
+*.ahk.bak
+*.ahk.bak2
+
+# Temporary files
+*~
+*.swp
+*.swo
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# OS-specific files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# Logs
+*.log
