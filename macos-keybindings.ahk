@@ -17,6 +17,9 @@
 ; Alt+Tab 管理用グローバル変数
 global isAltTabMenuActive := false
 
+; 入力ソース切替用のグローバル変数
+global isLangSwitcherActive := false
+
 ; Emacsキーバインド除外グループ
 GroupAdd "EmacsExcludeBasic", "ahk_exe WindowsTerminal.exe"
 GroupAdd "EmacsExcludeAdvanced", "ahk_exe WindowsTerminal.exe"
@@ -251,4 +254,39 @@ ConfirmAndLogout() {
 >^+4::SendInput "#+s"            ; Command+Shift+4: 範囲選択スクリーンショット
 
 ; 入力ソースの切替
-<^Space::SendInput "#{Space}"    ; Control+Space: 入力ソースの切替
+<^Space:: {
+    static init := false
+    if (!init) {
+        global isLangSwitcherActive
+        init := true
+    }
+
+    ; すでに入力切替メニューがアクティブな場合は、追加のSpaceのみ送信
+    if (isLangSwitcherActive) {
+        Send "{Space}"
+        return
+    }
+
+    ; 新しい入力切替セッションの開始
+    isLangSwitcherActive := true
+    Send "{LWin down}{Space}"
+
+    ; 左Ctrlのリリースを監視するタイマーを開始
+    SetTimer(WatchLCtrlForLangSwitcher, 50)  ; 50ミリ秒間隔でチェック
+}
+
+; 左Ctrlキーのリリースを監視する関数（入力ソース切替用）
+WatchLCtrlForLangSwitcher() {
+    static init := false
+    if (!init) {
+        global isLangSwitcherActive
+        init := true
+    }
+
+    if !GetKeyState("LControl", "P") && isLangSwitcherActive {
+        ; 左Ctrlが離された時の処理
+        Send "{LWin up}"
+        isLangSwitcherActive := false
+        SetTimer(WatchLCtrlForLangSwitcher, 0)  ; タイマーを停止
+    }
+}
