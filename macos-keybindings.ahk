@@ -336,9 +336,23 @@ InitWindowSwitcher() {
             ; ウィンドウが可視かつ最小化されていないことを確認
             if (WinGetStyle(window) & 0x10000000) && !(WinGetMinMax(window) = -1) {
                 title := WinGetTitle(window)
+                class := WinGetClass(window)
                 
+                ; Explorer特殊ウィンドウをスキップ
+                if (active_exe = "explorer.exe") {
+                    if (class = "Shell_TrayWnd" || class = "Shell_SecondaryTrayWnd" || 
+                        class = "Progman" || class = "WorkerW" || title = "Program Manager" ||
+                        title = "")
+                        continue
+                }
+
+                ; 特殊なIME関連ウィンドウをスキップ
+                if (InStr(title, "Default IME") || InStr(title, "MSCTFIME") || 
+                    title = "Start" || InStr(title, "Windows.UI.Core"))
+                    continue
+
                 ; 特殊なウィンドウを除外
-                if (title != "" && !InStr(title, "Default IME") && !InStr(title, "MSCTFIME")) {
+                if (title != "") {
                     switcherWindowList.Push(window)
                     
                     ; 現在のウィンドウのインデックスを記録
