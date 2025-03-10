@@ -20,6 +20,13 @@ global isAltTabMenuActive := false
 ; 入力ソース切替用のグローバル変数
 global isLangSwitcherActive := false
 
+; ウィンドウ切替用グローバル変数
+global isWindowSwitcherActive := false
+global windowSwitcherDirection := false  ; false=順方向、true=逆方向
+global switcherWindowList := []          ; ウィンドウリストを保存
+global switcherCurrentIndex := 0         ; 現在のウィンドウインデックス
+global switcherOriginalHwnd := 0         ; 元のウィンドウID
+
 ; Emacsキーバインド除外グループ
 GroupAdd "EmacsExcludeBasic", "ahk_exe WindowsTerminal.exe"
 GroupAdd "EmacsExcludeAdvanced", "ahk_exe WindowsTerminal.exe"
@@ -221,6 +228,193 @@ MinimizeOtherWindows() {
 ; アプリケーション終了と閉じる
 >^q::SendInput "!{F4}"          ; Command+Q: アプリケーションを終了
 >^w::SendInput "^{F4}"          ; Command+W: ウィンドウ/タブを閉じる
+
+; Command+` ウィンドウ切替（通常順）
+>^vkC0:: {
+    static init := false
+    if (!init) {
+        global isWindowSwitcherActive, windowSwitcherDirection
+        global switcherWindowList, switcherCurrentIndex, switcherOriginalHwnd
+        init := true
+    }
+    
+    ; すでにウィンドウ切替がアクティブなら次に移動
+    if (isWindowSwitcherActive) {
+        if (windowSwitcherDirection)
+            WindowSwitcherPrev()
+        else
+            WindowSwitcherNext()
+        return
+    }
+    
+    ; 新しいウィンドウ切替セッションの開始
+    isWindowSwitcherActive := true
+    windowSwitcherDirection := false
+    
+    ; 同一アプリのウィンドウリストを取得して保存
+    InitWindowSwitcher()
+    
+    ; 最初の切り替え実行
+    WindowSwitcherNext()
+    
+    ; RCtrlキーのリリースを監視するタイマーを開始
+    SetTimer(WatchRCtrlForWindowSwitcher, 50)
+}
+
+; Command+Shift+` ウィンドウ切替（逆順）
+>^+vkC0:: {
+    static init := false
+    if (!init) {
+        global isWindowSwitcherActive, windowSwitcherDirection
+        global switcherWindowList, switcherCurrentIndex, switcherOriginalHwnd
+        init := true
+    }
+    
+    ; すでにウィンドウ切替がアクティブなら前に移動
+    if (isWindowSwitcherActive) {
+        if (windowSwitcherDirection)
+            WindowSwitcherNext()
+        else
+            WindowSwitcherPrev()
+        return
+    }
+    
+    ; 新しいウィンドウ切替セッションの開始（逆順）
+    isWindowSwitcherActive := true
+    windowSwitcherDirection := true
+    
+    ; 同一アプリのウィンドウリストを取得して保存
+    InitWindowSwitcher()
+    
+    ; 最初の切り替え実行
+    WindowSwitcherPrev()
+    
+    ; RCtrlキーのリリースを監視するタイマーを開始
+    SetTimer(WatchRCtrlForWindowSwitcher, 50)
+}
+
+; RCtrlキーのリリースを監視する関数（ウィンドウ切替用）
+WatchRCtrlForWindowSwitcher() {
+    static init := false
+    if (!init) {
+        global isWindowSwitcherActive
+        init := true
+    }
+
+    if !GetKeyState("RControl", "P") && isWindowSwitcherActive {
+        ; 右Ctrlが離された時の処理
+        isWindowSwitcherActive := false
+        SetTimer(WatchRCtrlForWindowSwitcher, 0)  ; タイマーを停止
+        
+        ; セッションリセット
+        ResetWindowSwitcher()
+    }
+}
+
+; ウィンドウ切替を初期化
+InitWindowSwitcher() {
+    global switcherWindowList := []
+    global switcherCurrentIndex := 0
+    global switcherOriginalHwnd := WinGetID("A")
+    
+    ; アクティブなウィンドウの情報を取得
+    active_exe := WinGetProcessName("A")
+    
+    if (!active_exe)
+        return
+    
+    ; 同一アプリのウィンドウをリストアップ
+    app_windows := WinGetList("ahk_exe " . active_exe)
+    
+    ; デバッグ情報
+    debug_text := "検出したウィンドウ数: " . app_windows.Length . "`n"
+    debug_count := 0
+    
+    ; 有効なウィンドウを追加
+    for window in app_windows {
+        try {
+            ; ウィンドウが可視かつ最小化されていないことを確認
+            if (WinGetStyle(window) & 0x10000000) && !(WinGetMinMax(window) = -1) {
+                title := WinGetTitle(window)
+                
+                ; 特殊なウィンドウを除外
+                if (title != "" && !InStr(title, "Default IME") && !InStr(title, "MSCTFIME")) {
+                    switcherWindowList.Push(window)
+                    
+                    ; 現在のウィンドウのインデックスを記録
+                    if (window = switcherOriginalHwnd)
+                        switcherCurrentIndex := switcherWindowList.Length
+                    
+                    ; デバッグ情報
+                    debug_count++
+                    debug_text .= debug_count . ": " . title . "`n"
+                }
+            }
+        } catch Error {
+            continue
+        }
+    }
+    
+    ; デバッグ情報表示（必要に応じてコメント解除）
+    debug_text .= "`n有効なウィンドウ数: " . switcherWindowList.Length . "`n"
+    debug_text .= "現在のインデックス: " . switcherCurrentIndex
+    ; ToolTip(debug_text)
+}
+
+; ウィンドウ切替をリセット
+ResetWindowSwitcher() {
+    global switcherWindowList := []
+    global switcherCurrentIndex := 0
+    global switcherOriginalHwnd := 0
+}
+
+; 次のウィンドウに切り替え
+WindowSwitcherNext() {
+    global switcherWindowList, switcherCurrentIndex
+    
+    ; ウィンドウが1つしかない場合は何もしない
+    if (switcherWindowList.Length <= 1)
+        return
+    
+    ; 次のウィンドウのインデックスを計算
+    switcherCurrentIndex := switcherCurrentIndex + 1
+    if (switcherCurrentIndex > switcherWindowList.Length)
+        switcherCurrentIndex := 1
+    
+    ; 切替先のウィンドウ
+    target_hwnd := switcherWindowList[switcherCurrentIndex]
+    
+    ; デバッグ情報
+    ; ToolTip("次へ: " . switcherCurrentIndex . "/" . switcherWindowList.Length)
+    
+    ; ウィンドウをアクティブにする
+    if WinExist("ahk_id " . target_hwnd)
+        WinActivate("ahk_id " . target_hwnd)
+}
+
+; 前のウィンドウに切り替え
+WindowSwitcherPrev() {
+    global switcherWindowList, switcherCurrentIndex
+    
+    ; ウィンドウが1つしかない場合は何もしない
+    if (switcherWindowList.Length <= 1)
+        return
+    
+    ; 前のウィンドウのインデックスを計算
+    switcherCurrentIndex := switcherCurrentIndex - 1
+    if (switcherCurrentIndex < 1)
+        switcherCurrentIndex := switcherWindowList.Length
+    
+    ; 切替先のウィンドウ
+    target_hwnd := switcherWindowList[switcherCurrentIndex]
+    
+    ; デバッグ情報
+    ; ToolTip("前へ: " . switcherCurrentIndex . "/" . switcherWindowList.Length)
+    
+    ; ウィンドウをアクティブにする
+    if WinExist("ahk_id " . target_hwnd)
+        WinActivate("ahk_id " . target_hwnd)
+}
 
 ; ウィンドウ操作のホットキー
 >^<^f::ToggleMaximize()          ; Command+Control+F: フルスクリーンをトグル
