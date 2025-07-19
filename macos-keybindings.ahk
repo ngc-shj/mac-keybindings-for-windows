@@ -81,7 +81,7 @@ GroupAdd "Filer", "ahk_exe explorer.exe"
 +!Left::SendInput "^+{Left}"    ; Shift+Option+左: 単語左を選択
 +!Right::SendInput "^+{Right}"  ; Shift+Option+右: 単語右を選択
 
-; 行頭・行末範囲選択 (Command+矢印キー) - macOS風の連続選択対応
+; 行頭・行末範囲選択 (Shift+Command+矢印キー) - macOS風の連続選択対応
 >^+Left:: {
     global lastSelectionTime, lastSelectionDirection
 
