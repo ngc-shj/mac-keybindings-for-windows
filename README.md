@@ -6,10 +6,26 @@ An AutoHotkey script that brings macOS keyboard shortcuts to your Windows system
 
 This script emulates macOS keyboard behavior on Windows, making it easier for Mac users to transition between systems. It implements familiar shortcuts like Command+Q to quit applications, Command+Tab for application switching, and Emacs-style text editing shortcuts.
 
+## Versions
+
+This project provides two versions for different keyboard layouts:
+
+### HHKB/Realforce Version (`macos-keybindings.ahk`)
+For programmable keyboards with hardware key remapping:
+- Requires physical key remapping on the keyboard
+- Left Ctrl → Control, Left Alt → Right Ctrl (Command), Left Win → Left Alt (Option)
+- Optimal for users with programmable keyboards
+
+### Standard 106-key Version (`macos-keybindings-106.ahk`)
+For standard Windows keyboards:
+- **No physical key remapping required**
+- CapsLock → Control, Left Win → Command, Left Alt → Option
+- Works with any standard Windows keyboard
+
 ## Requirements
 
 - [AutoHotkey v2.0](https://www.autohotkey.com/) or later
-- Physical keyboard with remapped keys (see Setup section)
+- Choose the appropriate version for your keyboard layout
 
 ## Features
 
@@ -23,13 +39,29 @@ This script emulates macOS keyboard behavior on Windows, making it easier for Ma
 
 ## Setup
 
-### Keyboard Remapping
+### Choose Your Version
 
-This script assumes you've already remapped some keys on your keyboard:
+#### For HHKB/Realforce Users
+If you have a programmable keyboard (HHKB, Realforce, etc.):
 
-- **Left Ctrl** (physical key to the left of A) → Used as **Control** (like on Mac)
-- **Left Alt** → Remapped to **Right Ctrl** → Functions as **Command**
-- **Left Windows** → Remapped to **Left Alt** → Functions as **Option**
+1. Configure your keyboard's hardware remapping:
+   - **Left Ctrl** (physical key to the left of A) → Used as **Control** (like on Mac)
+   - **Left Alt** → Remapped to **Right Ctrl** → Functions as **Command**
+   - **Left Windows** → Remapped to **Left Alt** → Functions as **Option**
+
+2. Use `macos-keybindings.ahk`
+
+#### For Standard Keyboard Users
+If you have a standard 106-key Windows keyboard:
+
+1. Use `macos-keybindings-106.ahk`
+2. **No keyboard configuration needed** - the script handles everything
+3. Key mapping:
+   - **CapsLock** → Functions as **Control** (Emacs shortcuts)
+   - **Left Windows** → Functions as **Command** (macOS shortcuts)
+   - **Left Alt** → Functions as **Option** (macOS shortcuts)
+
+### Keyboard Remapping (HHKB/Realforce Only)
 
 This can be achieved using:
 - Hardware remapping on programmable keyboards like HHKB or Realforce
@@ -39,7 +71,9 @@ This can be achieved using:
 ### Installing and Running the Script
 
 1. Install [AutoHotkey v2.0](https://www.autohotkey.com/)
-2. Download `macos-keybindings.ahk` from this repository
+2. Download the appropriate script:
+   - `macos-keybindings.ahk` for HHKB/Realforce
+   - `macos-keybindings-106.ahk` for standard keyboards
 3. Run the script:
 
 #### Basic Execution
@@ -69,8 +103,24 @@ To run automatically at startup:
 **Example batch file (startup.bat):**
 ```batch
 @echo off
-"C:\Program Files\AutoHotkey\v2\AutoHotkey64_UIA.exe" "C:\Users\%USERNAME%\path\to\macos-keybindings.ahk" /uiAccess
+"C:\Program Files\AutoHotkey\v2\AutoHotkey64_UIA.exe" "C:\Users\%USERNAME%\path\to\macos-keybindings-106.ahk" /uiAccess
 ```
+
+*Note: Replace `macos-keybindings-106.ahk` with `macos-keybindings.ahk` if using the HHKB version.*
+
+## Development
+
+### Converting Between Versions
+Use the included Python script to convert between keyboard layouts:
+
+```bash
+python convert-to-standard-keyboard.py macos-keybindings.ahk macos-keybindings-106.ahk
+```
+
+This script automatically:
+- Converts key bindings from HHKB to 106-key layout
+- Updates comments and documentation
+- Adds CapsLock initialization for the standard version
 
 ## Customization
 
