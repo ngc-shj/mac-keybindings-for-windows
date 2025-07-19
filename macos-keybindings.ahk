@@ -81,6 +81,10 @@ GroupAdd "Filer", "ahk_exe explorer.exe"
 +!Left::SendInput "^+{Left}"    ; Shift+Option+左: 単語左を選択
 +!Right::SendInput "^+{Right}"  ; Shift+Option+右: 単語右を選択
 
+; macOS特有の削除操作
+>^BS::SendInput "+{Home}{BS}"  ; Command+Backspace: カーソル位置から行頭まで削除
+!BS::SendInput "^+{Left}{BS}"  ; Option+Backspace: 前の単語を削除
+
 ; 行頭・行末範囲選択 (Shift+Command+矢印キー) - macOS風の連続選択対応
 >^+Left:: {
     global lastSelectionTime, lastSelectionDirection
@@ -136,12 +140,17 @@ GroupAdd "Filer", "ahk_exe explorer.exe"
 
 ; ファイラー専用のキーバインド
 #HotIf WinActive("ahk_group Filer")
-    >^Up::SendInput "!{Up}"        ; Command+上: 上の階層へ
-    >^Down::SendInput "!{Down}"    ; Command+下: フォルダを開く
+    ; ページ操作
+    >^Up::SendInput "^{Home}"      ; Command+上: 文書の先頭へ
+    >^Down::SendInput "^{End}"     ; Command+下: 文書の末尾へ
 
     ; 行頭・行末移動 (Command+矢印キー)
     >^Left::SendInput "{Home}"     ; Command+左: 行頭へ移動
     >^Right::SendInput "{End}"     ; Command+右: 行末へ移動
+
+    ; ファイル操作
+    >^Delete::SendInput "{Delete}" ; Command+Delete: ゴミ箱に移動
+    >^r::SendInput "{F5}"          ; Command+R: 更新
 
     ; 移動
     >^[::SendInput "!{Left}"       ; Command+[: 戻る
@@ -150,8 +159,9 @@ GroupAdd "Filer", "ahk_exe explorer.exe"
 
 ; ブラウザ、ファイラー以外のアプリケーション用キーバインド
 #HotIf !WinActive("ahk_group Browser") && !WinActive("ahk_group Filer")
-    >^Up::SendInput "!{Up}"        ; Command+上: 上の階層へ
-    >^Down::SendInput "!{Down}"    ; Command+下: フォルダを開く
+    ; 文書ナビゲーション (macOS風)
+    >^Up::SendInput "^{Home}"      ; Command+上: 文書の先頭へ
+    >^Down::SendInput "^{End}"     ; Command+下: 文書の末尾へ
 
     ; 行頭・行末移動 (Command+矢印キー)
     >^Left::SendInput "{Home}"     ; Command+左: 行頭へ移動
