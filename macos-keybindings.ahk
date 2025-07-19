@@ -27,6 +27,10 @@ global switcherWindowList := []          ; ウィンドウリストを保存
 global switcherCurrentIndex := 0         ; 現在のウィンドウインデックス
 global switcherOriginalHwnd := 0         ; 元のウィンドウID
 
+; 選択状態管理用グローバル変数
+global lastSelectionDirection := ""      ; "left", "right", ""
+global lastSelectionTime := 0
+
 ; Emacsキーバインド除外グループ
 GroupAdd "EmacsExcludeBasic", "ahk_exe WindowsTerminal.exe"
 GroupAdd "EmacsExcludeAdvanced", "ahk_exe WindowsTerminal.exe"
@@ -38,6 +42,9 @@ GroupAdd "Browser", "ahk_exe msedge.exe"
 ; GroupAdd "Browser", "ahk_exe firefox.exe"
 ; GroupAdd "Browser", "ahk_exe brave.exe"
 ; GroupAdd "Browser", "ahk_exe opera.exe"
+
+; ファイラーグループ
+GroupAdd "Filer", "ahk_exe explorer.exe"
 
 ; ====================================================================
 ; Emacsキーバインド
@@ -74,6 +81,38 @@ GroupAdd "Browser", "ahk_exe msedge.exe"
 +!Left::SendInput "^+{Left}"    ; Shift+Option+左: 単語左を選択
 +!Right::SendInput "^+{Right}"  ; Shift+Option+右: 単語右を選択
 
+; 行頭・行末範囲選択 (Command+矢印キー) - macOS風の連続選択対応
+>^+Left:: {
+    global lastSelectionTime, lastSelectionDirection
+
+    ; 直前のCommand+Shift+→の後なら1行全選択
+    if (lastSelectionDirection = "right" && A_TickCount - lastSelectionTime < 2000) {
+        SendInput "{Home}+{End}"  ; 1行全選択
+    } else {
+        SendInput "+{Home}"       ; 行頭まで選択
+    }
+    lastSelectionDirection := "left"
+    lastSelectionTime := A_TickCount
+}
+
+>^+Right:: {
+    global lastSelectionTime, lastSelectionDirection
+
+    ; 直前のCommand+Shift+←の後なら1行全選択
+    if (lastSelectionDirection = "left" && A_TickCount - lastSelectionTime < 2000) {
+        SendInput "{Home}+{End}"  ; 1行全選択
+    } else {
+        SendInput "+{End}"        ; 行末まで選択
+    }
+    lastSelectionDirection := "right"
+    lastSelectionTime := A_TickCount
+}
+
+; 他のキーが押された時に選択状態をリセット
+~*::{
+    global lastSelectionDirection := ""
+}
+
 ; ページ移動
 !Up::SendInput "{PgUp}"         ; Option+Up: ページアップ
 !Down::SendInput "{PgDn}"       ; Option+Down: ページダウン
@@ -87,7 +126,7 @@ GroupAdd "Browser", "ahk_exe msedge.exe"
     ; ページ操作
     >^Up::SendInput "{HOME}"       ; Command+上: ページ先頭へ
     >^Down::SendInput "{END}"      ; Command+下: ページ末尾へ
-    
+
     ; ナビゲーション
     >^Left::SendInput "!{Left}"    ; Command+左: ブラウザバック
     >^Right::SendInput "!{Right}"  ; Command+右: ブラウザフォワード
@@ -95,17 +134,33 @@ GroupAdd "Browser", "ahk_exe msedge.exe"
     >^]::SendInput "!{Right}"      ; Command+]: ブラウザフォワード
 #HotIf
 
-; ブラウザ以外のアプリケーション用キーバインド
-#HotIf !WinActive("ahk_group Browser")
+; ファイラー専用のキーバインド
+#HotIf WinActive("ahk_group Filer")
     >^Up::SendInput "!{Up}"        ; Command+上: 上の階層へ
     >^Down::SendInput "!{Down}"    ; Command+下: フォルダを開く
-    >^Left::SendInput "!{Left}"    ; Command+左: 戻る
-    >^Right::SendInput "!{Right}"  ; Command+右: 進む
+
+    ; 行頭・行末移動 (Command+矢印キー)
+    >^Left::SendInput "{Home}"     ; Command+左: 行頭へ移動
+    >^Right::SendInput "{End}"     ; Command+右: 行末へ移動
+
+    ; 移動
+    >^[::SendInput "!{Left}"       ; Command+[: 戻る
+    >^]::SendInput "!{Right}"      ; Command+]: 進む
+#HotIf
+
+; ブラウザ、ファイラー以外のアプリケーション用キーバインド
+#HotIf !WinActive("ahk_group Browser") && !WinActive("ahk_group Filer")
+    >^Up::SendInput "!{Up}"        ; Command+上: 上の階層へ
+    >^Down::SendInput "!{Down}"    ; Command+下: フォルダを開く
+
+    ; 行頭・行末移動 (Command+矢印キー)
+    >^Left::SendInput "{Home}"     ; Command+左: 行頭へ移動
+    >^Right::SendInput "{End}"     ; Command+右: 行末へ移動
 #HotIf
 
 ; タブ操作 (アプリケーション共通)
->^+[::SendInput "^+{Tab}"       ; Command+Shift+[: 前のタブ
->^+]::SendInput "^{Tab}"        ; Command+Shift+]: 次のタブ
+>^+[::SendInput "^+{Tab}"       ; Shift+Command+[: 前のタブ
+>^+]::SendInput "^{Tab}"        ; Shift+Command+]: 次のタブ
 
 ; ====================================================================
 ; Windows RCtrl(Command)+Tab を Alt+Tab に入れ替え
@@ -261,7 +316,7 @@ MinimizeOtherWindows() {
     SetTimer(WatchRCtrlForWindowSwitcher, 50)
 }
 
-; Command+Shift+` ウィンドウ切替（逆順）
+; Shift+Command+` ウィンドウ切替（逆順）
 >^+vkC0:: {
     static init := false
     if (!init) {
@@ -451,15 +506,15 @@ ConfirmAndLogout() {
 ; ロックとログアウト
 >^<^q::DllCall("LockWorkStation")  ; Control+Command+Q: 画面ロック
 >^+!q::DllCall("ExitWindowsEx", "UInt", 0, "UInt", 0) ; Command+Option+Shift+Q: 即時ログアウト
->^+q::ConfirmAndLogout()           ; Command+Shift+Q: 確認付きログアウト
+>^+q::ConfirmAndLogout()           ; Shift+Command+Q: 確認付きログアウト
 
 ; ====================================================================
 ; スクリーンショットと入力切替
 ; ====================================================================
 
 ; スクリーンショット
->^+3::SendInput "#{PrintScreen}" ; Command+Shift+3: 画面全体のスクリーンショット
->^+4::SendInput "#+s"            ; Command+Shift+4: 範囲選択スクリーンショット
+>^+3::SendInput "#{PrintScreen}" ; Shift+Command+3: 画面全体のスクリーンショット
+>^+4::SendInput "#+s"            ; Shift+Command+4: 範囲選択スクリーンショット
 
 ; 入力ソースの切替
 <^Space:: {
