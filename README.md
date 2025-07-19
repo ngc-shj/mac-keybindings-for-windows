@@ -16,11 +16,25 @@ For programmable keyboards with hardware key remapping:
 - Left Ctrl → Control, Left Alt → Right Ctrl (Command), Left Win → Left Alt (Option)
 - Optimal for users with programmable keyboards
 
-### Standard 106-key Version (`macos-keybindings-106.ahk`)
+### Standard 106-key Version (`macos-keybindings-106.ahk`) 
 For standard Windows keyboards:
 - **No physical key remapping required**
-- CapsLock → Control, Left Win → Command, Left Alt → Option
+- Left Ctrl → Control, Left Win → Command, Left Alt → Option
 - Works with any standard Windows keyboard
+
+## Known Limitations
+
+### Windows Key Combinations
+Some keyboard shortcuts using the Windows key may not work properly due to Windows system limitations:
+
+- **Windows Snap Feature Conflicts**: `Win+Shift+Arrow` combinations may conflict with Windows' built-in window snapping
+- **System Reserved Shortcuts**: Some `Win+key` combinations are reserved by Windows and cannot be overridden
+- **UAC and Elevated Applications**: Windows key shortcuts may not function in applications running with administrator privileges
+
+**Workarounds:**
+- Some shortcuts use alternative key combinations (e.g., `Ctrl+Alt+F` instead of `Ctrl+Win+F`)
+- Consider disabling Windows Snap feature if line selection shortcuts are essential
+- Use UIA version of AutoHotkey for better compatibility with elevated applications
 
 ## Requirements
 
@@ -29,7 +43,7 @@ For standard Windows keyboards:
 
 ## Features
 
-- **Emacs-style text editing shortcuts**: Navigation and editing with Ctrl+A, Ctrl+E, Ctrl+F, etc.
+- **Emacs-style text editing shortcuts**: Navigation and editing with Left Ctrl+A, Left Ctrl+E, Left Ctrl+F, etc.
 - **macOS window management**: Command+W to close windows, Command+M to minimize, etc.
 - **Browser navigation**: Command+[ and Command+] for back/forward, Command+T for new tab
 - **Application switching**: Command+Tab for Alt+Tab functionality
@@ -54,10 +68,10 @@ If you have a programmable keyboard (HHKB, Realforce, etc.):
 #### For Standard Keyboard Users
 If you have a standard 106-key Windows keyboard:
 
-1. Use `macos-keybindings-106.ahk`
+1. Use `macos-keybindings-106.ahk` 
 2. **No keyboard configuration needed** - the script handles everything
 3. Key mapping:
-   - **CapsLock** → Functions as **Control** (Emacs shortcuts)
+   - **Left Ctrl** → Functions as **Control** (Emacs shortcuts)
    - **Left Windows** → Functions as **Command** (macOS shortcuts)
    - **Left Alt** → Functions as **Option** (macOS shortcuts)
 
@@ -108,20 +122,6 @@ To run automatically at startup:
 
 *Note: Replace `macos-keybindings-106.ahk` with `macos-keybindings.ahk` if using the HHKB version.*
 
-## Development
-
-### Converting Between Versions
-Use the included Python script to convert between keyboard layouts:
-
-```bash
-python convert-to-standard-keyboard.py macos-keybindings.ahk macos-keybindings-106.ahk
-```
-
-This script automatically:
-- Converts key bindings from HHKB to 106-key layout
-- Updates comments and documentation
-- Adds CapsLock initialization for the standard version
-
 ## Customization
 
 You can modify the script to suit your needs:
@@ -142,6 +142,8 @@ You can modify these exclusions in the group definitions at the top of the scrip
 ## Troubleshooting
 
 - **Shortcuts not working**: Make sure the script is running (check for the AutoHotkey icon in the system tray)
+- **Windows key combinations not responding**: Some `Win+key` shortcuts may conflict with Windows system functions (see Known Limitations above)
+- **Line selection not working**: Windows Snap feature may interfere with `Win+Shift+Arrow` combinations
 - **Conflicts with specific applications**: Add them to the appropriate exclusion group
 - **Issues after system updates**: Reinstall AutoHotkey or restart the script
 - **UIA version security warnings**: Initial execution may show security prompts - this is normal

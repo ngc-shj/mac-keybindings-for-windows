@@ -1,23 +1,15 @@
 #Requires AutoHotkey v2.0
 
 /*
- * macOS風キーバインド for Windows
+ * macOS風キーバインド for Windows (106キーボード版)
  * 
- * 前提:
- * Standard 106-key keyboard側で以下のキーマップを入れ替え済みであること
- *   - CapsLock                      → macOSでのControlキー相当
+ * キーマッピング:
+ * このスクリプトは以下のキー配置でmacOS風操作を実現します
+ *   - LCtrl                         → macOSでのControlキー相当
  *   - LWin                          → macOSでのCommandキー相当
  *   - LAlt                          → macOSでのOptionキー相当
  * ※ 物理的なキーの入れ替えは不要です（AutoHotkeyで実現）
  */
-
-
-; ====================================================================
-; CapsLock キーを修飾キーとして使用するための初期化
-; ====================================================================
-
-; CapsLock単体での動作を無効化（修飾キーとしてのみ使用）
-CapsLock::return
 
 ; ====================================================================
 ; グローバル変数とグループ定義
@@ -62,73 +54,56 @@ GroupAdd "Filer", "ahk_exe explorer.exe"
 ; 基本カーソル操作 (ほとんどのアプリケーションで有効)
 #HotIf ! WinActive("ahk_group EmacsExcludeBasic")
     ; 文字削除
-    CapsLock & h::SendInput "{BS}"       ; Ctrl+H: バックスペース
-    CapsLock & d::SendInput "{Del}"      ; Ctrl+D: 削除
+    LCtrl & h::SendInput "{BS}"       ; Ctrl+H: バックスペース
+    LCtrl & d::SendInput "{Del}"      ; Ctrl+D: 削除
     
     ; カーソル移動
-    CapsLock & a::SendInput "{HOME}"     ; Ctrl+A: 行頭へ
-    CapsLock & e::SendInput "{END}"      ; Ctrl+E: 行末へ
-    CapsLock & f::SendInput "{Right}"    ; Ctrl+F: 右へ
-    CapsLock & b::SendInput "{Left}"     ; Ctrl+B: 左へ
-    CapsLock & p::SendInput "{Up}"       ; Ctrl+P: 上へ
-    CapsLock & n::SendInput "{Down}"     ; Ctrl+N: 下へ
+    LCtrl & a::SendInput "{HOME}"     ; Ctrl+A: 行頭へ
+    LCtrl & e::SendInput "{END}"      ; Ctrl+E: 行末へ
+    LCtrl & f::SendInput "{Right}"    ; Ctrl+F: 右へ
+    LCtrl & b::SendInput "{Left}"     ; Ctrl+B: 左へ
+    LCtrl & p::SendInput "{Up}"       ; Ctrl+P: 上へ
+    LCtrl & n::SendInput "{Down}"     ; Ctrl+N: 下へ
 #HotIf
 
 ; 拡張テキスト編集 (コード編集アプリケーションは除外)
 #HotIf ! WinActive("ahk_group EmacsExcludeAdvanced")
-    CapsLock & k::SendInput "{Shift down}{End}{Shift up}{Del}"  ; Ctrl+K: カーソル位置から行末まで削除
-    CapsLock & w::SendInput "{Ctrl down}{Shift down}{Left}{Shift up}{Ctrl Up}{Del}"  ; Ctrl+W: 前の単語を削除
+    LCtrl & k::SendInput "{Shift down}{End}{Shift up}{Del}"  ; Ctrl+K: カーソル位置から行末まで削除
+    LCtrl & w::SendInput "{Ctrl down}{Shift down}{Left}{Shift up}{Ctrl Up}{Del}"  ; Ctrl+W: 前の単語を削除
 #HotIf
 
 ; ====================================================================
 ; カーソル移動 (macOS風)
 ; ====================================================================
 
-; 単語単位のカーソル操作 (Option+矢印キー)
-LAlt & Left::SendInput "^{Left}"      ; Option+左: 単語左へ
-LAlt & Right::SendInput "^{Right}"    ; Option+右: 単語右へ
-+LAlt & Left::SendInput "^+{Left}"    ; Shift+Option+左: 単語左を選択
-+LAlt & Right::SendInput "^+{Right}"  ; Shift+Option+右: 単語右を選択
-
-; macOS特有の削除操作
->^BS::SendInput "+{Home}{BS}"  ; Command+Backspace: カーソル位置から行頭まで削除
-LAlt & BS::SendInput "^+{Left}{BS}"  ; Option+Backspace: 前の単語を削除
-
-; 行頭・行末範囲選択 (Shift+Command+矢印キー) - macOS風の連続選択対応
->^+Left:: {
-    global lastSelectionTime, lastSelectionDirection
-
-    ; 直前のCommand+Shift+→の後なら1行全選択
-    if (lastSelectionDirection = "right" && A_TickCount - lastSelectionTime < 2000) {
-        SendInput "{Home}+{End}"  ; 1行全選択
+; Shift+Option の組み合わせ
+LAlt & Left:: {
+    if GetKeyState("Shift", "P") {
+        SendInput "^+{Left}"    ; Shift+Option+左: 単語左を選択
     } else {
-        SendInput "+{Home}"       ; 行頭まで選択
+        SendInput "^{Left}"     ; Option+左: 単語左へ
     }
-    lastSelectionDirection := "left"
-    lastSelectionTime := A_TickCount
 }
 
->^+Right:: {
-    global lastSelectionTime, lastSelectionDirection
-
-    ; 直前のCommand+Shift+←の後なら1行全選択
-    if (lastSelectionDirection = "left" && A_TickCount - lastSelectionTime < 2000) {
-        SendInput "{Home}+{End}"  ; 1行全選択
+LAlt & Right:: {
+    if GetKeyState("Shift", "P") {
+        SendInput "^+{Right}"   ; Shift+Option+右: 単語右を選択
     } else {
-        SendInput "+{End}"        ; 行末まで選択
+        SendInput "^{Right}"    ; Option+右: 単語右へ
     }
-    lastSelectionDirection := "right"
-    lastSelectionTime := A_TickCount
 }
 
-; 他のキーが押された時に選択状態をリセット
-~*::{
-    global lastSelectionDirection := ""
-}
-
-; ページ移動
 LAlt & Up::SendInput "{PgUp}"         ; Option+Up: ページアップ
 LAlt & Down::SendInput "{PgDn}"       ; Option+Down: ページダウン
+
+; Option+Backspace: 前の単語を削除
+LAlt & BS::SendInput "^+{Left}{BS}"
+
+; macOS特有の削除操作
+LWin & BS::SendInput "+{Home}{BS}"    ; Command+Backspace: カーソル位置から行頭まで削除
+
+; 行頭・行末移動と選択 (Command+矢印キー)
+; ※ アプリケーション別に定義（重複を避けるため）
 
 ; ====================================================================
 ; ブラウザとファイラーの操作
@@ -136,57 +111,93 @@ LAlt & Down::SendInput "{PgDn}"       ; Option+Down: ページダウン
 
 ; ブラウザ専用のキーバインド
 #HotIf WinActive("ahk_group Browser")
-    ; ページ操作
-    >^Up::SendInput "{HOME}"       ; Command+上: ページ先頭へ
-    >^Down::SendInput "{END}"      ; Command+下: ページ末尾へ
-
-    ; ナビゲーション
-    >^Left::SendInput "!{Left}"    ; Command+左: ブラウザバック
-    >^Right::SendInput "!{Right}"  ; Command+右: ブラウザフォワード
-    >^[::SendInput "!{Left}"       ; Command+[: ブラウザバック
-    >^]::SendInput "!{Right}"      ; Command+]: ブラウザフォワード
+    ; Command+矢印キー
+    LWin & Up::SendInput "{HOME}"       ; Command+上: ページ先頭へ
+    LWin & Down::SendInput "{END}"      ; Command+下: ページ末尾へ
+    LWin & Left::SendInput "!{Left}"    ; Command+左: ブラウザバック
+    LWin & Right::SendInput "!{Right}"  ; Command+右: ブラウザフォワード
 #HotIf
 
 ; ファイラー専用のキーバインド
 #HotIf WinActive("ahk_group Filer")
-    ; ページ操作
-    >^Up::SendInput "^{Home}"      ; Command+上: 文書の先頭へ
-    >^Down::SendInput "^{End}"     ; Command+下: 文書の末尾へ
-
-    ; 行頭・行末移動 (Command+矢印キー)
-    >^Left::SendInput "{Home}"     ; Command+左: 行頭へ移動
-    >^Right::SendInput "{End}"     ; Command+右: 行末へ移動
-
+    ; Command+矢印キー
+    LWin & Up::SendInput "^{Home}"      ; Command+上: 文書の先頭へ
+    LWin & Down::SendInput "^{End}"     ; Command+下: 文書の末尾へ
+    LWin & Left::SendInput "{Home}"     ; Command+左: 行頭へ移動
+    LWin & Right::SendInput "{End}"     ; Command+右: 行末へ移動
+    
     ; ファイル操作
-    >^Delete::SendInput "{Delete}" ; Command+Delete: ゴミ箱に移動
-    >^r::SendInput "{F5}"          ; Command+R: 更新
-
-    ; 移動
-    >^[::SendInput "!{Left}"       ; Command+[: 戻る
-    >^]::SendInput "!{Right}"      ; Command+]: 進む
+    LWin & Delete::SendInput "{Delete}" ; Command+Delete: ゴミ箱に移動
+    LWin & r::SendInput "{F5}"          ; Command+R: 更新
 #HotIf
 
 ; ブラウザ、ファイラー以外のアプリケーション用キーバインド
 #HotIf !WinActive("ahk_group Browser") && !WinActive("ahk_group Filer")
-    ; 文書ナビゲーション (macOS風)
-    >^Up::SendInput "^{Home}"      ; Command+上: 文書の先頭へ
-    >^Down::SendInput "^{End}"     ; Command+下: 文書の末尾へ
-
-    ; 行頭・行末移動 (Command+矢印キー)
-    >^Left::SendInput "{Home}"     ; Command+左: 行頭へ移動
-    >^Right::SendInput "{End}"     ; Command+右: 行末へ移動
+    ; Command+矢印キー
+    LWin & Up::SendInput "^{Home}"      ; Command+上: 文書の先頭へ
+    LWin & Down::SendInput "^{End}"     ; Command+下: 文書の末尾へ
+    LWin & Left::SendInput "{Home}"     ; Command+左: 行頭へ移動
+    LWin & Right::SendInput "{End}"     ; Command+右: 行末へ移動
 #HotIf
 
+; Command+Shift+矢印キー (行頭・行末選択) - 全アプリケーション共通
+LWin & Left:: {
+    if GetKeyState("Shift", "P") {
+        ; Shift+Command+Left: 行頭まで選択
+        global lastSelectionTime, lastSelectionDirection
+        if (lastSelectionDirection = "right" && A_TickCount - lastSelectionTime < 2000) {
+            SendInput "{Home}+{End}"  ; 1行全選択
+        } else {
+            SendInput "+{Home}"       ; 行頭まで選択
+        }
+        lastSelectionDirection := "left"
+        lastSelectionTime := A_TickCount
+    } else {
+        ; Command+Left: 通常の行頭移動
+        if WinActive("ahk_group Browser") {
+            SendInput "!{Left}"       ; ブラウザバック
+        } else {
+            SendInput "{Home}"        ; 行頭へ移動
+        }
+    }
+}
+
+LWin & Right:: {
+    if GetKeyState("Shift", "P") {
+        ; Shift+Command+Right: 行末まで選択
+        global lastSelectionTime, lastSelectionDirection
+        if (lastSelectionDirection = "left" && A_TickCount - lastSelectionTime < 2000) {
+            SendInput "{Home}+{End}"  ; 1行全選択
+        } else {
+            SendInput "+{End}"        ; 行末まで選択
+        }
+        lastSelectionDirection := "right"
+        lastSelectionTime := A_TickCount
+    } else {
+        ; Command+Right: 通常の行末移動
+        if WinActive("ahk_group Browser") {
+            SendInput "!{Right}"      ; ブラウザフォワード
+        } else {
+            SendInput "{End}"         ; 行末へ移動
+        }
+    }
+}
+
+; 他のキーが押された時に選択状態をリセット
+~*::{
+    global lastSelectionDirection := ""
+}
+
+; ====================================================================
+; タブ操作とアプリケーション切替
+; ====================================================================
+
 ; タブ操作 (アプリケーション共通)
->^+[::SendInput "^+{Tab}"       ; Shift+Command+[: 前のタブ
->^+]::SendInput "^{Tab}"        ; Shift+Command+]: 次のタブ
+LWin & [::SendInput "^+{Tab}"       ; Command+[: 前のタブ
+LWin & ]::SendInput "^{Tab}"        ; Command+]: 次のタブ
 
-; ====================================================================
-; Windows RCtrl(Command)+Tab を Alt+Tab に入れ替え
-; ====================================================================
-
-; Alt+Tab機能をRCtrl(Command)+Tabに割り当て
->^Tab:: {
+; Alt+Tab機能をLWin+Tabに割り当て
+LWin & Tab:: {
     static init := false
     if (!init) {
         global isAltTabMenuActive
@@ -209,29 +220,28 @@ LAlt & Down::SendInput "{PgDn}"       ; Option+Down: ページダウン
     else
         Send "{Alt Down}{Tab}"
 
-    ; 右Ctrlのリリースを監視するタイマーを開始
-    SetTimer(WatchRCtrl, 50)  ; 50ミリ秒間隔でチェック
+    ; LWinのリリースを監視するタイマーを開始
+    SetTimer(WatchLWin, 50)  ; 50ミリ秒間隔でチェック
 }
 
-; RCtrl(Command)キーのリリースを監視する関数
-WatchRCtrl() {
+; LWinキーのリリースを監視する関数
+WatchLWin() {
     static init := false
     if (!init) {
         global isAltTabMenuActive
         init := true
     }
 
-    if !GetKeyState("RCtrl", "P") && isAltTabMenuActive {
-        ; 右Ctrlが離された時の処理
+    if !GetKeyState("LWin", "P") && isAltTabMenuActive {
+        ; LWinが離された時の処理
         Send "{Shift Up}{Alt Up}"
         isAltTabMenuActive := false
-        SetTimer(WatchRCtrl, 0)  ; タイマーを停止
+        SetTimer(WatchLWin, 0)  ; タイマーを停止
     }
 }
 
 ; 元のAlt+Tabの動作を無効化して普通のTabキーとして機能させる
 LAlt & Tab::SendInput "{Tab}"
-+LAlt & Tab::SendInput "+{Tab}"
 
 ; ====================================================================
 ; ウィンドウ操作関数
@@ -300,11 +310,22 @@ MinimizeOtherWindows() {
 ; ====================================================================
 
 ; アプリケーション終了と閉じる
->^q::SendInput "!{F4}"          ; Command+Q: アプリケーションを終了
->^w::SendInput "^{F4}"          ; Command+W: ウィンドウ/タブを閉じる
+LWin & q:: {
+    if GetKeyState("Shift", "P") {
+        ; Shift+Command+Q: 確認付きログアウト
+        result := MsgBox("ログアウトしますか？", "確認", "OKCancel Default2")
+        if (result = "OK")
+            DllCall("ExitWindowsEx", "UInt", 0, "UInt", 0)
+    } else {
+        ; Command+Q: アプリケーションを終了
+        SendInput "!{F4}"
+    }
+}
 
-; Command+` ウィンドウ切替（通常順）
->^vkC0:: {
+LWin & w::SendInput "^{F4}"          ; Command+W: ウィンドウ/タブを閉じる
+
+; Command+` ウィンドウ切替（Shiftで方向制御）
+LWin & vkC0:: {
     static init := false
     if (!init) {
         global isWindowSwitcherActive, windowSwitcherDirection
@@ -312,9 +333,12 @@ MinimizeOtherWindows() {
         init := true
     }
     
-    ; すでにウィンドウ切替がアクティブなら次に移動
+    ; Shiftキーで方向を決定
+    shift_pressed := GetKeyState("Shift", "P")
+    
+    ; すでにウィンドウ切替がアクティブなら次/前に移動
     if (isWindowSwitcherActive) {
-        if (windowSwitcherDirection)
+        if (shift_pressed)
             WindowSwitcherPrev()
         else
             WindowSwitcherNext()
@@ -323,62 +347,33 @@ MinimizeOtherWindows() {
     
     ; 新しいウィンドウ切替セッションの開始
     isWindowSwitcherActive := true
-    windowSwitcherDirection := false
+    windowSwitcherDirection := shift_pressed
     
     ; 同一アプリのウィンドウリストを取得して保存
     InitWindowSwitcher()
     
     ; 最初の切り替え実行
-    WindowSwitcherNext()
+    if (shift_pressed)
+        WindowSwitcherPrev()
+    else
+        WindowSwitcherNext()
     
-    ; RCtrlキーのリリースを監視するタイマーを開始
-    SetTimer(WatchRCtrlForWindowSwitcher, 50)
+    ; LWinキーのリリースを監視するタイマーを開始
+    SetTimer(WatchLWinForWindowSwitcher, 50)
 }
 
-; Shift+Command+` ウィンドウ切替（逆順）
->^+vkC0:: {
-    static init := false
-    if (!init) {
-        global isWindowSwitcherActive, windowSwitcherDirection
-        global switcherWindowList, switcherCurrentIndex, switcherOriginalHwnd
-        init := true
-    }
-    
-    ; すでにウィンドウ切替がアクティブなら前に移動
-    if (isWindowSwitcherActive) {
-        if (windowSwitcherDirection)
-            WindowSwitcherNext()
-        else
-            WindowSwitcherPrev()
-        return
-    }
-    
-    ; 新しいウィンドウ切替セッションの開始（逆順）
-    isWindowSwitcherActive := true
-    windowSwitcherDirection := true
-    
-    ; 同一アプリのウィンドウリストを取得して保存
-    InitWindowSwitcher()
-    
-    ; 最初の切り替え実行
-    WindowSwitcherPrev()
-    
-    ; RCtrlキーのリリースを監視するタイマーを開始
-    SetTimer(WatchRCtrlForWindowSwitcher, 50)
-}
-
-; RCtrlキーのリリースを監視する関数（ウィンドウ切替用）
-WatchRCtrlForWindowSwitcher() {
+; LWinキーのリリースを監視する関数（ウィンドウ切替用）
+WatchLWinForWindowSwitcher() {
     static init := false
     if (!init) {
         global isWindowSwitcherActive
         init := true
     }
 
-    if !GetKeyState("RControl", "P") && isWindowSwitcherActive {
-        ; 右Ctrlが離された時の処理
+    if !GetKeyState("LWin", "P") && isWindowSwitcherActive {
+        ; LWinが離された時の処理
         isWindowSwitcherActive := false
-        SetTimer(WatchRCtrlForWindowSwitcher, 0)  ; タイマーを停止
+        SetTimer(WatchLWinForWindowSwitcher, 0)  ; タイマーを停止
         
         ; セッションリセット
         ResetWindowSwitcher()
@@ -399,10 +394,6 @@ InitWindowSwitcher() {
     
     ; 同一アプリのウィンドウをリストアップ
     app_windows := WinGetList("ahk_exe " . active_exe)
-    
-    ; デバッグ情報
-    debug_text := "検出したウィンドウ数: " . app_windows.Length . "`n"
-    debug_count := 0
     
     ; 有効なウィンドウを追加
     for window in app_windows {
@@ -432,21 +423,12 @@ InitWindowSwitcher() {
                     ; 現在のウィンドウのインデックスを記録
                     if (window = switcherOriginalHwnd)
                         switcherCurrentIndex := switcherWindowList.Length
-                    
-                    ; デバッグ情報
-                    debug_count++
-                    debug_text .= debug_count . ": " . title . "`n"
                 }
             }
         } catch Error {
             continue
         }
     }
-    
-    ; デバッグ情報表示（必要に応じてコメント解除）
-    debug_text .= "`n有効なウィンドウ数: " . switcherWindowList.Length . "`n"
-    debug_text .= "現在のインデックス: " . switcherCurrentIndex
-    ; ToolTip(debug_text)
 }
 
 ; ウィンドウ切替をリセット
@@ -472,9 +454,6 @@ WindowSwitcherNext() {
     ; 切替先のウィンドウ
     target_hwnd := switcherWindowList[switcherCurrentIndex]
     
-    ; デバッグ情報
-    ; ToolTip("次へ: " . switcherCurrentIndex . "/" . switcherWindowList.Length)
-    
     ; ウィンドウをアクティブにする
     if WinExist("ahk_id " . target_hwnd)
         WinActivate("ahk_id " . target_hwnd)
@@ -496,47 +475,74 @@ WindowSwitcherPrev() {
     ; 切替先のウィンドウ
     target_hwnd := switcherWindowList[switcherCurrentIndex]
     
-    ; デバッグ情報
-    ; ToolTip("前へ: " . switcherCurrentIndex . "/" . switcherWindowList.Length)
-    
     ; ウィンドウをアクティブにする
     if WinExist("ahk_id " . target_hwnd)
         WinActivate("ahk_id " . target_hwnd)
 }
 
-; ウィンドウ操作のホットキー
->^CapsLock & f::ToggleMaximize()          ; Command+Control+F: フルスクリーンをトグル
->^m::MinimizeWindow()            ; Command+M: ウィンドウを最小化
->^!m::MinimizeAllWindows()       ; Command+Option+M: すべてのウィンドウを最小化
->^h::MinimizeWindow()            ; Command+H: ウィンドウを隠す（最小化）
->^!h::MinimizeOtherWindows()     ; Command+Option+H: 他のウィンドウを隠す（最小化）
+; ウィンドウ操作のホットキー - Control+Command組み合わせ
+LCtrl & f:: {
+    if GetKeyState("LWin", "P") {
+        ; Control+Command+F: フルスクリーンをトグル
+        ToggleMaximize()
+    }
+    ; 通常のCtrl+FはEmacsキーバインドで処理済み
+}
+
+LWin & m:: {
+    if GetKeyState("LAlt", "P") {
+        ; Command+Option+M: すべてのウィンドウを最小化
+        MinimizeAllWindows()
+    } else {
+        ; Command+M: ウィンドウを最小化
+        MinimizeWindow()
+    }
+}
+
+LWin & h:: {
+    if GetKeyState("LAlt", "P") {
+        ; Command+Option+H: 他のウィンドウを隠す（最小化）
+        MinimizeOtherWindows()
+    } else {
+        ; Command+H: ウィンドウを隠す（最小化）
+        MinimizeWindow()
+    }
+}
 
 ; ====================================================================
 ; システム操作ホットキー
 ; ====================================================================
 
-; ログアウト確認ダイアログ表示
-ConfirmAndLogout() {
-    result := MsgBox("ログアウトしますか？", "確認", "OKCancel Default2")
-    if (result = "OK")
-        DllCall("ExitWindowsEx", "UInt", 0, "UInt", 0)
+; ロック - Control+Command+Q
+LCtrl & q:: {
+    if GetKeyState("LWin", "P") {
+        ; Control+Command+Q: 画面ロック
+        DllCall("LockWorkStation")
+    }
+    ; 通常のCtrl+Qは何もしない（アプリ終了と混同を避ける）
 }
-
-; ロックとログアウト
->^CapsLock & q::DllCall("LockWorkStation")  ; Control+Command+Q: 画面ロック
->^+!q::DllCall("ExitWindowsEx", "UInt", 0, "UInt", 0) ; Command+Option+Shift+Q: 即時ログアウト
->^+q::ConfirmAndLogout()           ; Shift+Command+Q: 確認付きログアウト
 
 ; ====================================================================
 ; スクリーンショットと入力切替
 ; ====================================================================
 
 ; スクリーンショット
->^+3::SendInput "#{PrintScreen}" ; Shift+Command+3: 画面全体のスクリーンショット
->^+4::SendInput "#+s"            ; Shift+Command+4: 範囲選択スクリーンショット
+LWin & 3:: {
+    if GetKeyState("Shift", "P") {
+        ; Shift+Command+3: 画面全体のスクリーンショット
+        SendInput "#{PrintScreen}"
+    }
+}
+
+LWin & 4:: {
+    if GetKeyState("Shift", "P") {
+        ; Shift+Command+4: 範囲選択スクリーンショット
+        SendInput "#+s"
+    }
+}
 
 ; 入力ソースの切替
-<^Space:: {
+LCtrl & Space:: {
     static init := false
     if (!init) {
         global isLangSwitcherActive
@@ -553,7 +559,7 @@ ConfirmAndLogout() {
     isLangSwitcherActive := true
     Send "{LWin down}{Space}"
 
-    ; 左Ctrlのリリースを監視するタイマーを開始
+    ; LCtrlのリリースを監視するタイマーを開始
     SetTimer(WatchLCtrlForLangSwitcher, 50)  ; 50ミリ秒間隔でチェック
 }
 
