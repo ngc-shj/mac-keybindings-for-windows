@@ -141,15 +141,31 @@ GroupAdd "Filer", "ahk_exe explorer.exe"
 ; ファイラー専用のキーバインド
 #HotIf WinActive("ahk_group Filer")
     ; ページ操作
-    >^Up::SendInput "^{Home}"      ; Command+上: 文書の先頭へ
-    >^Down::SendInput "^{End}"     ; Command+下: 文書の末尾へ
+    >^Up::SendInput "!{Up}"        ; Command+上: 親フォルダへ移動
+    >^Down:: {                     ; Command+下: ファイルを開く
+        oldMode  := A_SendMode
+        oldDelay := A_KeyDelay
+        oldDur   := A_KeyDuration
+        try {
+            SendMode "Event"
+            SetKeyDelay 0, 30
+            Send "{RCtrl up}"
+            Sleep 30
+            Send "{Enter}"
+        } finally {
+            SendMode oldMode
+            SetKeyDelay oldDelay, oldDur
+        }
+    }
 
     ; 行頭・行末移動 (Command+矢印キー)
     >^Left::SendInput "{Home}"     ; Command+左: 行頭へ移動
     >^Right::SendInput "{End}"     ; Command+右: 行末へ移動
 
     ; ファイル操作
-    >^Delete::SendInput "{Delete}" ; Command+Delete: ゴミ箱に移動
+    Enter::SendInput "{F2}"        ; Enter: ファイル名変更
+    >^BS::SendInput "{Delete}"     ; Command+Backspace: ゴミ箱に移動
+    >^Delete::SendInput "+{Delete}" ; Shift+Delete: 完全削除
     >^r::SendInput "{F5}"          ; Command+R: 更新
 
     ; 移動
