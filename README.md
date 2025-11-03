@@ -50,6 +50,7 @@ Some keyboard shortcuts using the Windows key may not work properly due to Windo
 - **macOS-style line selection**: Shift+Command+← and Shift+Command+→ with continuous selection support
 - **Screen capture**: Command+Shift+3 and Command+Shift+4 for screenshots
 - **System operations**: Command+Control+Q to lock the screen, Command+Option+Shift+Q to log out
+- **Explorer behaviors**: **Cmd+Up** → parent folder (`Alt+Up`), **Cmd+Down** → open selection (stabilized to avoid rare `Ctrl+Enter` misdetection; changes are scoped to the handler).
 
 ## Setup
 
@@ -147,6 +148,7 @@ You can modify these exclusions in the group definitions at the top of the scrip
 - **Conflicts with specific applications**: Add them to the appropriate exclusion group
 - **Issues after system updates**: Reinstall AutoHotkey or restart the script
 - **UIA version security warnings**: Initial execution may show security prompts - this is normal
+- Explorer: If **Cmd+Down** is occasionally interpreted as `Ctrl+Enter`, the latest script scopes Event mode with a short key press to stabilize this. If needed, tweak the small `Sleep` window (e.g., 20–50 ms).
 
 ## License
 
